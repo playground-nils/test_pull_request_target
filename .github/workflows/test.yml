@@ -1,13 +1,11 @@
-on:
-  push:
-  pull_request_target:
-  pull_request:
-
+'on':
+  push: null
+  pull_request_target: null
+  pull_request: null
 jobs:
-
   select_environment:
-    name: 'Prepare Environment'
-    runs-on: ubuntu-20.04
+    name: Prepare Environment
+    runs-on: ubuntu-latest
     outputs:
       timestamp: ${{ steps.select.outputs.timestamp }}
       repository: ${{ steps.select.outputs.repository }}
@@ -19,35 +17,23 @@ jobs:
       pr_number: ${{ steps.select.outputs.pr_number }}
       yarp_version: ${{ steps.select.outputs.yarp_version }}
     steps:
-    - name: "Set output variables"
+    - name: Set output variables
       id: select
-      run: |
-        echo "::set-output name=timestamp::$(/bin/date -u +%Y%m%d-%H%M%S)"
-
-        echo "::set-output name=repository::${{ github.repository }}"
-
-        if [[ "$GITHUB_EVENT_NAME" = "pull_request_target" ]]; then
-          echo "::set-output name=environment::code-analysis_unsafe"
-          echo "::set-output name=ref::refs/pull/$(cat $GITHUB_EVENT_PATH | jq .number)/merge"
-        else
-          echo "::set-output name=environment::code-analysis"
-          echo "::set-output name=ref::${{ github.ref }}"
-        fi
-        if [[ "$GITHUB_EVENT_NAME" = "pull_request" || "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
-          echo "::set-output name=sha::${{ github.event.pull_request.head.sha }}"
-          echo "::set-output name=head_ref::${GITHUB_HEAD_REF}"
-          echo "::set-output name=base_ref::${GITHUB_BASE_REF}"
-          echo "::set-output name=pr_number::$(cat $GITHUB_EVENT_PATH | jq .number)"
-        else
-          echo "::set-output name=sha::${{ github.sha }}"
-        fi
-
-        # Get YARP Project Version
-        if [[ "$GITHUB_EVENT_NAME" = "release" ]]; then
-          echo "::set-output name=yarp_version::$(awk '/ VERSION /{print $2}' CMakeLists.txt)"
-        fi
-
-    - name: 'Debug output variables'
+      run: "echo \"::set-output name=timestamp::$(/bin/date -u +%Y%m%d-%H%M%S)\"\n\
+        \necho \"::set-output name=repository::${{ github.repository }}\"\n\nif [[\
+        \ \"$GITHUB_EVENT_NAME\" = \"pull_request_target\" ]]; then\n  echo \"::set-output\
+        \ name=environment::code-analysis_unsafe\"\n  echo \"::set-output name=ref::refs/pull/$(cat\
+        \ $GITHUB_EVENT_PATH | jq .number)/merge\"\nelse\n  echo \"::set-output name=environment::code-analysis\"\
+        \n  echo \"::set-output name=ref::${{ github.ref }}\"\nfi\nif [[ \"$GITHUB_EVENT_NAME\"\
+        \ = \"pull_request\" || \"$GITHUB_EVENT_NAME\" == \"pull_request_target\"\
+        \ ]]; then\n  echo \"::set-output name=sha::${{ github.event.pull_request.head.sha\
+        \ }}\"\n  echo \"::set-output name=head_ref::${GITHUB_HEAD_REF}\"\n  echo\
+        \ \"::set-output name=base_ref::${GITHUB_BASE_REF}\"\n  echo \"::set-output\
+        \ name=pr_number::$(cat $GITHUB_EVENT_PATH | jq .number)\"\nelse\n  echo \"\
+        ::set-output name=sha::${{ github.sha }}\"\nfi\n\n# Get YARP Project Version\n\
+        if [[ \"$GITHUB_EVENT_NAME\" = \"release\" ]]; then\n  echo \"::set-output\
+        \ name=yarp_version::$(awk '/ VERSION /{print $2}' CMakeLists.txt)\"\nfi\n"
+    - name: Debug output variables
       env:
         TIMESTAMP: ${{ steps.select.outputs.timestamp }}
         REPOSITORY: ${{ steps.select.outputs.repository }}
@@ -58,94 +44,123 @@ jobs:
         BASE_REF: ${{ steps.select.outputs.base_ref }}
         PR_NUMBER: ${{ steps.select.outputs.pr_number }}
         YARP_VERSION: ${{ steps.select.outputs.yarp_version }}
-      run: |
-        echo "TIMESTAMP = ${TIMESTAMP}"
+      run: 'echo "TIMESTAMP = ${TIMESTAMP}"
+
         echo "REPOSITORY = ${REPOSITORY}"
+
         echo "REF = ${REF}"
+
         echo "ENVIRONMENT = ${ENVIRONMENT}"
+
         echo "SHA = ${SHA}"
+
         echo "HEAD_REF = ${HEAD_REF}"
+
         echo "BASE_REF = ${BASE_REF}"
+
         echo "PR_NUMBER = ${PR_NUMBER}"
+
         echo "YARP_VERSION = ${YARP_VERSION}"
 
-    - name: "Print Environment"
-      run: |
-        env
+        '
+    - name: Print Environment
+      run: 'env
 
-    - name: "Print Event Json"
-      run: |
-        echo "::group::install jq"
+        '
+    - name: Print Event Json
+      run: 'echo "::group::install jq"
+
         sudo apt-get update -qq
+
         sudo apt-get install -qq -y jq
+
         echo "::endgroup::"
+
 
         cat $GITHUB_EVENT_PATH | jq -C
 
-
+        '
   print_info:
-    name: 'Print useful information'
+    name: Print useful information
     needs: select_environment
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
+    - name: Print Environment
+      run: 'echo "::group::env"
 
-    - name: "Print Environment"
-      run: |
-        echo "::group::env"
         env
+
         echo "::endgroup::"
 
-    - name: "Modify Environment"
-      run: |
-        echo "GITHUB_REF=${{ needs.select_environment.outputs.ref }}" >> $GITHUB_ENV
+        '
+    - name: Modify Environment
+      run: 'echo "GITHUB_REF=${{ needs.select_environment.outputs.ref }}" >> $GITHUB_ENV
+
         echo "GITHUB_SHA=${{ needs.select_environment.outputs.sha }}" >> $GITHUB_ENV
 
-    - name: "Print Environment Again"
-      run: |
-        echo "::group::env"
+        '
+    - name: Print Environment Again
+      run: 'echo "::group::env"
+
         env
+
         echo "::endgroup::"
 
-    - name: "Force Environment and Print Environment Once More"
-      run: |
-        export "GITHUB_REF=${{ needs.select_environment.outputs.ref }}"
+        '
+    - name: Force Environment and Print Environment Once More
+      run: 'export "GITHUB_REF=${{ needs.select_environment.outputs.ref }}"
+
         export "GITHUB_SHA=${{ needs.select_environment.outputs.sha }}"
+
         export "GITHUB_EVENT_NAME=pull_request"
 
+
         echo "::group::env"
+
         env
+
         echo "::endgroup::"
 
+        '
+    - name: Install tools
+      run: 'sudo apt-get update -qq
 
-    - name: "Install tools"
-      run: |
-        sudo apt-get update -qq
         sudo apt-get install -qq -y jq
 
-    - name: "Print event"
-      run: |
-        echo "::group::GITHUB_EVENT_PATH"
+        '
+    - name: Print event
+      run: 'echo "::group::GITHUB_EVENT_PATH"
+
         cat $GITHUB_EVENT_PATH | jq -C
+
         echo "::endgroup::"
 
-    - name: "Clone repository"
+        '
+    - name: Clone repository
       uses: actions/checkout@v2
       with:
         repository: ${{ needs.select_environment.outputs.repository }}
         ref: ${{ needs.select_environment.outputs.ref }}
+    - name: Print needs.select_environment.outputs.ref
+      run: 'echo "::group::needs.select_environment.outputs.ref"
 
-    - name: "Print needs.select_environment.outputs.ref"
-      run: |
-        echo "::group::needs.select_environment.outputs.ref"
         echo ${{ needs.select_environment.outputs.ref }}
+
         echo "::endgroup::"
+
 
         echo "::group::git show needs.select_environment.outputs.ref"
+
         git show ${{ needs.select_environment.outputs.ref }}
+
         echo "::endgroup::"
 
-    - name: "Print needs.select_environment.outputs.sha"
-      run: |
-        echo "::group::git show needs.select_environment.outputs.sha"
+        '
+    - name: Print needs.select_environment.outputs.sha
+      run: 'echo "::group::git show needs.select_environment.outputs.sha"
+
         git show ${{ needs.select_environment.outputs.sha }}
+
         echo "::endgroup::"
+
+        '
